@@ -26,6 +26,11 @@ pub fn app_cache_dir<P: AsRef<Path>>(prefix: P) -> PathBuf {
 }
 
 #[inline]
+pub fn app_temporary_dir<P: AsRef<Path>>(prefix: P) -> PathBuf {
+    app_cache_dir(prefix).join("tmp")
+}
+
+#[inline]
 pub fn app_log_dir<P: AsRef<Path>>(prefix: P) -> PathBuf {
     log_dir().join(prefix.as_ref())
 }

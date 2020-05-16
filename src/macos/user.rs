@@ -69,12 +69,12 @@ pub mod iri {
 
     #[inline]
     pub fn app_cache_dir<P: AsRef<Path>>(prefix: P) -> IriBuf {
-        crate::file_path(super::app_cache_dir(prefix).to_string_lossy())
+        crate::file_path(super::app_cache_dir(prefix))
     }
 
     #[inline]
     pub fn app_temporary_dir<P: AsRef<Path>>(prefix: P) -> IriBuf {
-        crate::file_path(super::app_cache_dir(prefix).to_string_lossy())
+        crate::file_path(super::app_cache_dir(prefix))
     }
 
     pub fn resolve(iri: &iref::IriBuf) -> Result<std::path::PathBuf, crate::ResolveError> {
