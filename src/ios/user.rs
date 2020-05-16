@@ -1,8 +1,8 @@
 pub use crate::macos::user::*;
 
 pub mod iri {
-    use std::convert::TryInto;
     use iref::IriBuf;
+    use std::convert::TryInto;
 
     #[inline]
     pub fn home_dir() -> IriBuf {
@@ -22,17 +22,17 @@ pub mod iri {
     pub fn app_config_dir<P: AsRef<str>>(prefix: P) -> IriBuf {
         library_dir("Preferences", prefix)
     }
-    
+
     #[inline]
     pub fn app_cache_dir<P: AsRef<str>>(prefix: P) -> IriBuf {
         library_dir("Caches", prefix)
     }
-    
+
     #[inline]
     pub fn app_log_dir<P: AsRef<str>>(prefix: P) -> IriBuf {
         library_dir("Logs", prefix)
     }
-    
+
     #[inline]
     pub fn app_temporary_dir<P: AsRef<str>>(prefix: P) -> IriBuf {
         library_dir("Caches/tmp", prefix)
@@ -40,13 +40,15 @@ pub mod iri {
 
     pub fn resolve(iri: &iref::IriBuf) -> Result<std::path::PathBuf, crate::ResolveError> {
         match iri.scheme().as_str() {
-            "file" => Ok(std::path::PathBuf::from(iri.path().into_str())),
+            "file" => Ok(std::path::PathBuf::from(iri.path().as_pct_str().decode())),
             "container" => {
-                Ok(super::home_dir().join(iri.path().into_str()))
+                let mut path = iri.path().as_pct_str().decode();
+                if path.starts_with("/") {
+                    path = path.chars().skip(1).collect::<String>();
+                }
+                Ok(super::home_dir().join(path))
             }
-            unhandled => {
-                Err(crate::ResolveError::InvalidScheme(unhandled.to_string()))
-            }
+            unhandled => Err(crate::ResolveError::InvalidScheme(unhandled.to_string())),
         }
     }
 }

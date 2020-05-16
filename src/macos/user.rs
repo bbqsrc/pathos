@@ -11,7 +11,7 @@ pub fn create_app_dirs<P: AsRef<Path>>(prefix: P) -> Result<(), std::io::Error> 
     std::fs::create_dir_all(app_config_dir(p))?;
     std::fs::create_dir_all(app_log_dir(p))?;
     std::fs::create_dir_all(app_cache_dir(p))?;
-    
+
     // TODO: set tmp writable only by creator.
     std::fs::create_dir_all(app_temporary_dir(p))?;
 
@@ -71,7 +71,7 @@ pub mod iri {
     pub fn app_cache_dir<P: AsRef<Path>>(prefix: P) -> IriBuf {
         crate::file_path(super::app_cache_dir(prefix).to_string_lossy())
     }
-    
+
     #[inline]
     pub fn app_temporary_dir<P: AsRef<Path>>(prefix: P) -> IriBuf {
         crate::file_path(super::app_cache_dir(prefix).to_string_lossy())
@@ -79,13 +79,15 @@ pub mod iri {
 
     pub fn resolve(iri: &iref::IriBuf) -> Result<std::path::PathBuf, crate::ResolveError> {
         match iri.scheme().as_str() {
-            "file" => Ok(std::path::PathBuf::from(iri.path().into_str())),
+            "file" => Ok(std::path::PathBuf::from(iri.path().as_pct_str().decode())),
             "container" => {
-                Ok(super::home_dir().join(iri.path().into_str()))
+                let mut path = iri.path().as_pct_str().decode();
+                if path.starts_with("/") {
+                    path = path.chars().skip(1).collect::<String>();
+                }
+                Ok(super::home_dir().join(path))
             }
-            unhandled => {
-                Err(crate::ResolveError::InvalidScheme(unhandled.to_string()))
-            }
+            unhandled => Err(crate::ResolveError::InvalidScheme(unhandled.to_string())),
         }
     }
 }

@@ -12,38 +12,45 @@ pub mod macos;
 pub mod windows;
 pub mod xdg;
 
-#[cfg(windows)]
-pub use windows::system as system;
-#[cfg(target_os = "macos")]
-pub use macos::system as system;
-#[cfg(target_os = "linux")]
-pub use linux::system as system;
-#[cfg(target_os = "ios")]
-pub use ios::system as system;
 #[cfg(target_os = "android")]
-pub use android::system as system;
-
-#[cfg(windows)]
-pub use windows::user as user;
-#[cfg(target_os = "macos")]
-pub use macos::user as user;
-#[cfg(target_os = "linux")]
-pub use linux::user as user;
+pub use android::system;
 #[cfg(target_os = "ios")]
-pub use ios::user as user;
-#[cfg(target_os = "android")]
-pub use android::user as user;
+pub use ios::system;
+#[cfg(target_os = "linux")]
+pub use linux::system;
+#[cfg(target_os = "macos")]
+pub use macos::system;
+#[cfg(windows)]
+pub use windows::system;
 
-use std::convert::TryInto;
+#[cfg(target_os = "android")]
+pub use android::user;
+#[cfg(target_os = "ios")]
+pub use ios::user;
+#[cfg(target_os = "linux")]
+pub use linux::user;
+#[cfg(target_os = "macos")]
+pub use macos::user;
+#[cfg(windows)]
+pub use windows::user;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ResolveError {
     #[error("IRI does not have `container` or `file` scheme. Got: {0}")]
     InvalidScheme(String),
+
+    #[error("IRI is empty")]
+    EmptyIri,
+
+    #[error("{0}")]
+    PlatformSpecific(String),
 }
 
-pub(crate) fn file_path<P: AsRef<str>>(path: P) -> iref::IriBuf {
-    let mut iri = iref::IriBuf::new("file:///").unwrap();
-    iri.set_path(path.as_ref().try_into().unwrap());
-    iri
+pub(crate) fn file_path<P: AsRef<std::path::Path>>(path: P) -> iref::IriBuf {
+    let path = path
+        .as_ref()
+        .to_string_lossy()
+        .replace(r"\", "/")
+        .replace(" ", "%20");
+    iref::IriBuf::new(&format!("file:///{}", path)).expect("invalid IRI")
 }

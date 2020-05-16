@@ -47,15 +47,100 @@ pub fn app_temporary_dir<P: AsRef<Path>>(prefix: P) -> PathBuf {
 }
 
 pub mod iri {
+    use iref::IriBuf;
+    use std::path::Path;
+
+    #[inline]
+    pub fn app_temporary_dir<P: AsRef<Path>>(prefix: P) -> IriBuf {
+        crate::file_path(super::app_temporary_dir(prefix))
+    }
+
+    #[inline]
+    pub fn app_cache_dir<P: AsRef<Path>>(prefix: P) -> IriBuf {
+        crate::file_path(super::app_cache_dir(prefix))
+    }
+
     pub fn resolve(iri: &iref::IriBuf) -> Result<std::path::PathBuf, crate::ResolveError> {
         match iri.scheme().as_str() {
-            "file" => Ok(std::path::PathBuf::from(iri.path().into_str())),
+            "file" => {
+                if let Some(first) = iri.path().first() {
+                    if first.len() != 2
+                        || !first.as_str().chars().next().unwrap().is_ascii_alphabetic()
+                        || first.as_str().chars().nth(1).unwrap() != ':'
+                    {
+                        return Err(crate::ResolveError::PlatformSpecific(format!(
+                            "Invalid drive letter. Got: {}",
+                            first.as_str()
+                        )));
+                    }
+                } else {
+                    return Err(crate::ResolveError::EmptyIri);
+                }
+                Ok(std::path::PathBuf::from(
+                    iri.path()
+                        .as_pct_str()
+                        .decode()
+                        .chars()
+                        .skip(1)
+                        .collect::<String>(),
+                ))
+            }
             "container" => {
-                Ok(super::home_dir().join(iri.path().into_str()))
+                let mut path = iri.path().as_pct_str().decode();
+                if path.starts_with("/") {
+                    path = path.chars().skip(1).collect::<String>();
+                }
+                Ok(super::home_dir().join(path))
             }
-            unhandled => {
-                Err(crate::ResolveError::InvalidScheme(unhandled.to_string()))
-            }
+            unhandled => Err(crate::ResolveError::InvalidScheme(unhandled.to_string())),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn basic_app() {
+        let user = whoami::username();
+        let expected = PathBuf::from(format!(r"C:\Users\{}\", &user));
+
+        assert_eq!(
+            app_temporary_dir("Special Company/Bad App"),
+            expected.join("AppData/Local/Special Company/Bad App/cache/tmp")
+        )
+    }
+
+    #[test]
+    fn basic_app2() {
+        let user = whoami::username();
+        let expected = PathBuf::from(format!(r"C:\Users\{}\", &user));
+
+        assert_eq!(
+            app_data_dir("Special Company/Bad App"),
+            expected.join("AppData/Roaming/Special Company/Bad App/")
+        )
+    }
+
+    #[test]
+    fn iri_file() {
+        let expected = PathBuf::from(r"C:\Program Files\Bad Idea");
+        let iri = crate::file_path(r"C:\Program Files\Bad Idea");
+
+        assert_eq!(expected, super::iri::resolve(&iri).unwrap());
+    }
+
+    #[test]
+    fn iri_container() {
+        let user = whoami::username();
+        let expected = PathBuf::from(format!(
+            r"C:\Users\{}\AppData\Local\Special Company\Bad App\log",
+            user
+        ));
+        let iri =
+            iref::IriBuf::new("container:/AppData/Local/Special%20Company/Bad%20App/log").unwrap();
+
+        assert_eq!(expected, super::iri::resolve(&iri).unwrap());
     }
 }

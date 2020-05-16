@@ -28,5 +28,33 @@ pub fn app_log_dir<P: AsRef<Path>>(prefix: P) -> PathBuf {
 
 #[inline]
 pub fn app_temporary_dir<P: AsRef<Path>>(prefix: P) -> PathBuf {
-    app_data_dir(prefix).join("cache/tmp")
+    app_data_dir(prefix).join("cache").join("tmp")
+}
+
+pub mod iri {
+    use iref::IriBuf;
+    use std::path::Path;
+
+    #[inline]
+    pub fn app_temporary_dir<P: AsRef<Path>>(prefix: P) -> IriBuf {
+        crate::file_path(super::app_temporary_dir(prefix))
+    }
+
+    #[inline]
+    pub fn app_cache_dir<P: AsRef<Path>>(prefix: P) -> IriBuf {
+        crate::file_path(super::app_cache_dir(prefix))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn basic_app() {
+        assert_eq!(
+            app_temporary_dir("Special Company/Bad App"),
+            Path::new(r"C:\ProgramData\Special Company\Bad App\cache\tmp\")
+        )
+    }
 }
