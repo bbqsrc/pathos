@@ -6,7 +6,7 @@ pub mod android;
 pub mod ios;
 #[cfg(any(feature = "linux", target_os = "linux"))]
 pub mod linux;
-#[cfg(any(feature = "macos", target_os = "macos"))]
+#[cfg(any(feature = "macos", target_os = "macos", target_os = "ios"))]
 pub mod macos;
 #[cfg(any(feature = "windows", target_os = "windows"))]
 pub mod windows;
