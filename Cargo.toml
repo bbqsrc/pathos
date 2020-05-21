@@ -7,8 +7,8 @@ edition = "2018"
 license = "Apache-2.0 OR MIT"
 
 [dependencies]
-dirs = "2.0.2"
-directories = "2.0.2"
+dirs = { package = "dirs-next", version = "1.0.0" }
+directories = { package = "directories-next", version = "1.0.0" }
 iref = "1.1.5"
 thiserror = "1.0.18"
 once_cell = "1.4.0"
