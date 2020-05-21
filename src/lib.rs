@@ -46,7 +46,7 @@ pub enum ResolveError {
     PlatformSpecific(String),
 }
 
-pub(crate) fn file_path<P: AsRef<std::path::Path>>(path: P) -> iref::IriBuf {
+pub fn file_path<P: AsRef<std::path::Path>>(path: P) -> iref::IriBuf {
     let path = path
         .as_ref()
         .to_string_lossy()

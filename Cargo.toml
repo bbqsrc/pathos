@@ -13,6 +13,7 @@ iref = "1.1.5"
 thiserror = "1.0.18"
 once_cell = "1.4.0"
 log = "0.4.8"
+libc = "0.2.70"
 
 [dev-dependencies]
 whoami = "0.8.1"
