@@ -10,10 +10,17 @@ pub mod iri {
     }
 
     #[inline]
-    fn library_dir<P: AsRef<str>>(x: &str, prefix: P) -> IriBuf {
+    pub(in super) fn library_dir<P: AsRef<str>>(x: &str, prefix: P) -> IriBuf {
         let mut iri = IriBuf::new("container:/Library/").unwrap();
-        iri.path_mut().push(x.try_into().unwrap());
-        iri.path_mut().push(prefix.as_ref().try_into().unwrap());
+        
+        for item in x.split("/") {
+            iri.path_mut().push(item.try_into().unwrap());
+        }
+
+        for item in prefix.as_ref().split("/") {
+            iri.path_mut().push(item.try_into().unwrap());
+        }
+
         iri.path_mut().open();
         iri
     }

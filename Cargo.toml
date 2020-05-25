@@ -17,3 +17,11 @@ libc = "0.2.70"
 
 [dev-dependencies]
 whoami = "0.8.1"
+
+[features]
+ios = []
+android = []
+macos = []
+windows = []
+linux = []
+xdg = []

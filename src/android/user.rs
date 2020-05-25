@@ -1,13 +1,7 @@
 use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 
-use once_cell::sync::{Lazy, OnceCell};
-
-// 31 |         pathos::user::iri::resolve(&self.0).ok()
-// 56 |         pathos::user::iri::app_cache_dir(APP_PATH))
-// 44 |     return pathos::user::app_log_dir(APP_PATH)
-
-// 97 |     ConfigPath(pathos::user::iri::app_temporary_dir(APP_PATH))
+use once_cell::sync::OnceCell;
 
 #[inline]
 pub fn app_cache_dir<P: AsRef<Path>>(prefix: P) -> PathBuf {
@@ -20,7 +14,7 @@ pub fn app_cache_dir<P: AsRef<Path>>(prefix: P) -> PathBuf {
 
 #[inline]
 pub fn app_temporary_dir<P: AsRef<Path>>(prefix: P) -> PathBuf {
-    std::env::temp_dir()
+    std::env::temp_dir().join(prefix)
 }
 
 pub mod iri {
@@ -32,7 +26,9 @@ pub mod iri {
     #[inline]
     pub fn app_cache_dir<P: AsRef<str>>(prefix: P) -> IriBuf {
         let mut iri = IriBuf::new("container:/cache/").unwrap();
-        iri.path_mut().push(prefix.as_ref().try_into().unwrap());
+        for item in prefix.as_ref().split("/") {
+            iri.path_mut().push(item.try_into().unwrap());
+        }
         iri.path_mut().open();
         iri
     }
@@ -64,7 +60,7 @@ static CONTAINER_PATH: OnceCell<PathBuf> = OnceCell::new();
 
 #[no_mangle]
 extern "C" fn pathos_set_container_path(container_path: *const std::os::raw::c_char) {
-    if (container_path.is_null()) {
+    if container_path.is_null() {
         log::error!("Invalid `container_path` passed; no Android container set.");
         return;
     }
