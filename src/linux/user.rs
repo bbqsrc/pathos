@@ -1,3 +1,39 @@
+use std::path::PathBuf;
+
 pub use crate::xdg::user::{
     app_cache_dir, app_config_dir, app_data_dir, app_log_dir, app_temporary_dir,
 };
+
+#[inline]
+pub fn home_dir() -> PathBuf {
+    dirs::home_dir().expect("no home directory")
+}
+
+pub mod iri {
+    use iref::IriBuf;
+    use std::path::Path;
+
+    #[inline]
+    pub fn app_cache_dir<P: AsRef<Path>>(prefix: P) -> IriBuf {
+        crate::file_path(super::app_cache_dir(prefix))
+    }
+
+    #[inline]
+    pub fn app_temporary_dir<P: AsRef<Path>>(prefix: P) -> IriBuf {
+        crate::file_path(super::app_cache_dir(prefix))
+    }
+
+    pub fn resolve(iri: &iref::IriBuf) -> Result<std::path::PathBuf, crate::ResolveError> {
+        match iri.scheme().as_str() {
+            "file" => Ok(std::path::PathBuf::from(iri.path().as_pct_str().decode())),
+            "container" => {
+                let mut path = iri.path().as_pct_str().decode();
+                if path.starts_with("/") {
+                    path = path.chars().skip(1).collect::<String>();
+                }
+                Ok(super::home_dir().join(path))
+            }
+            unhandled => Err(crate::ResolveError::InvalidScheme(unhandled.to_string())),
+        }
+    }
+}
