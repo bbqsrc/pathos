@@ -10,6 +10,7 @@ pub mod linux;
 pub mod macos;
 #[cfg(any(feature = "windows", target_os = "windows"))]
 pub mod windows;
+#[cfg(any(unix, feature = "xdg"))]
 pub mod xdg;
 
 #[cfg(target_os = "android")]
