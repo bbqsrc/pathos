@@ -1,5 +1,9 @@
 use std::path::{Path, PathBuf};
 
+use once_cell::sync::Lazy;
+
+static BASE_DIRS: Lazy<directories::BaseDirs> = Lazy::new(|| directories::BaseDirs::new().unwrap());
+
 #[inline]
 pub fn home_dir() -> PathBuf {
     dirs::home_dir().expect("no home directory")
@@ -20,8 +24,7 @@ pub fn create_app_dirs<P: AsRef<Path>>(prefix: P) -> Result<(), std::io::Error> 
 
 #[inline]
 pub fn app_data_dir<P: AsRef<Path>>(prefix: P) -> PathBuf {
-    let base = directories::BaseDirs::new().unwrap();
-    base.data_dir().join(prefix.as_ref())
+    BASE_DIRS.data_dir().join(prefix.as_ref())
 }
 
 #[inline]
@@ -31,19 +34,30 @@ pub fn app_config_dir<P: AsRef<Path>>(prefix: P) -> PathBuf {
 
 #[inline]
 pub fn app_cache_dir<P: AsRef<Path>>(prefix: P) -> PathBuf {
-    let base = directories::BaseDirs::new().unwrap();
-    base.data_local_dir().join(prefix.as_ref()).join("cache")
+    BASE_DIRS
+        .data_local_dir()
+        .join(prefix.as_ref())
+        .join("cache")
 }
 
 #[inline]
 pub fn app_log_dir<P: AsRef<Path>>(prefix: P) -> PathBuf {
-    let base = directories::BaseDirs::new().unwrap();
-    base.data_local_dir().join(prefix.as_ref()).join("log")
+    BASE_DIRS.data_local_dir().join(prefix.as_ref()).join("log")
 }
 
 #[inline]
 pub fn app_temporary_dir<P: AsRef<Path>>(prefix: P) -> PathBuf {
     app_cache_dir(prefix).join("tmp")
+}
+
+#[inline]
+pub fn local_dir() -> PathBuf {
+    BASE_DIRS.data_local_dir().to_path_buf()
+}
+
+#[inline]
+pub fn roaming_dir() -> PathBuf {
+    BASE_DIRS.data_dir().to_path_buf()
 }
 
 pub mod iri {

@@ -1,7 +1,7 @@
 [package]
 name = "pathos"
-description = "Find user and system paths on your operating system or somebody else's."
-version = "0.1.6"
+description = "A natural API for finding OS-specific user or system directories, regardless of the operating system. "
+version = "0.1.7"
 authors = ["Brendan Molloy <brendan@bbqsrc.net>"]
 edition = "2018"
 license = "Apache-2.0 OR MIT"
@@ -10,13 +10,13 @@ license = "Apache-2.0 OR MIT"
 dirs = { package = "dirs-next", version = "1.0.1" }
 directories = { package = "directories-next", version = "1.0.1" }
 iref = "1.1.5"
-thiserror = "1.0.19"
+thiserror = "1.0.20"
 once_cell = "1.4.0"
 log = "0.4.8"
-libc = "0.2.71"
+libc = "0.2.72"
 
 [dev-dependencies]
-whoami = "0.8.1"
+whoami = "0.9.0"
 
 [features]
 ios = []

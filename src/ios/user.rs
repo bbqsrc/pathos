@@ -10,9 +10,9 @@ pub mod iri {
     }
 
     #[inline]
-    pub(in super) fn library_dir<P: AsRef<str>>(x: &str, prefix: P) -> IriBuf {
+    pub(super) fn library_dir<P: AsRef<str>>(x: &str, prefix: P) -> IriBuf {
         let mut iri = IriBuf::new("container:/Library/").unwrap();
-        
+
         for item in x.split("/") {
             iri.path_mut().push(item.try_into().unwrap());
         }
