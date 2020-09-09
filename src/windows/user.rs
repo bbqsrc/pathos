@@ -1,112 +1,186 @@
 use std::path::{Path, PathBuf};
 
+use crate::{AppDirs as _, Error, UserDirs};
 use once_cell::sync::Lazy;
 
-static BASE_DIRS: Lazy<directories::BaseDirs> = Lazy::new(|| directories::BaseDirs::new().unwrap());
+static DIRS: Lazy<Result<Dirs, Error>> = Lazy::new(|| Dirs::new());
 
 #[inline]
-pub fn home_dir() -> PathBuf {
-    dirs::home_dir().expect("no home directory")
+pub(crate) fn home_dir() -> Result<PathBuf, Error> {
+    home::home_dir().ok_or_else(|| Error::NoHomeDirectory)
+}
+
+pub struct Dirs {
+    home_dir: PathBuf,
+    roaming_dir: PathBuf,
+    local_dir: PathBuf,
+}
+
+impl UserDirs for Dirs {
+    fn new() -> Result<Self, Error> {
+        let home_dir = home_dir()?;
+        let appdata_dir = home_dir.join("AppData");
+        let roaming_dir = appdata_dir.join("Roaming");
+        let local_dir = appdata_dir.join("Local");
+
+        Ok(Self {
+            local_dir,
+            roaming_dir,
+            home_dir,
+        })
+    }
+
+    fn home_dir(&self) -> &Path {
+        &self.home_dir
+    }
+
+    fn data_dir(&self) -> &Path {
+        &self.roaming_dir
+    }
+
+    fn cache_dir(&self) -> &Path {
+        &self.local_dir
+    }
+}
+
+struct AppDirs {
+    data_dir: PathBuf,
+    config_dir: PathBuf,
+    cache_dir: PathBuf,
+    log_dir: PathBuf,
+    temporary_dir: PathBuf,
+}
+
+impl crate::AppDirs for AppDirs {
+    fn new<P>(prefix: P) -> Result<Self, Error>
+    where
+        P: Into<PathBuf>,
+    {
+        let prefix = prefix.into();
+        let dirs = Dirs::new()?;
+
+        let data_dir = dirs.data_dir().join(&prefix);
+        let cache_dir = dirs.cache_dir().join(&prefix).join("cache");
+
+        let user_dirs = Self {
+            config_dir: data_dir.join("config"),
+            temporary_dir: cache_dir.join("tmp"),
+            log_dir: data_dir.join("log"),
+            data_dir,
+            cache_dir,
+        };
+
+        user_dirs.create()?;
+
+        Ok(user_dirs)
+    }
+
+    fn create(&self) -> Result<(), Error> {
+        let dirs = [
+            self.data_dir(),
+            self.config_dir(),
+            self.cache_dir(),
+            self.temporary_dir(),
+            self.log_dir(),
+        ];
+
+        for dir in dirs.iter() {
+            std::fs::create_dir_all(dir).map_err(|e| {
+                Error::CreateDirectoryFailed(eieio::Error::from(e), dir.to_path_buf())
+            })?;
+        }
+        // TODO: set tmp writable only by creator.
+
+        Ok(())
+    }
+
+    fn data_dir(&self) -> &Path {
+        &self.data_dir
+    }
+
+    fn config_dir(&self) -> &Path {
+        &self.config_dir
+    }
+
+    fn cache_dir(&self) -> &Path {
+        &self.cache_dir
+    }
+
+    fn log_dir(&self) -> &Path {
+        &self.log_dir
+    }
+
+    fn temporary_dir(&self) -> &Path {
+        &self.temporary_dir
+    }
 }
 
 #[inline]
-pub fn create_app_dirs<P: AsRef<Path>>(prefix: P) -> Result<(), std::io::Error> {
-    let p = prefix.as_ref();
-    std::fs::create_dir_all(app_config_dir(p))?;
-    std::fs::create_dir_all(app_log_dir(p))?;
-    std::fs::create_dir_all(app_cache_dir(p))?;
-
-    // TODO: set tmp writable only by creator.
-    std::fs::create_dir_all(app_temporary_dir(p))?;
-
-    Ok(())
+pub fn roaming_dir() -> Result<&'static Path, Error> {
+    data_dir()
 }
 
 #[inline]
-pub fn app_data_dir<P: AsRef<Path>>(prefix: P) -> PathBuf {
-    BASE_DIRS.data_dir().join(prefix.as_ref())
+pub fn local_dir() -> Result<&'static Path, Error> {
+    data_dir()
 }
 
 #[inline]
-pub fn app_config_dir<P: AsRef<Path>>(prefix: P) -> PathBuf {
-    app_data_dir(prefix).join("config")
+pub fn data_dir() -> Result<&'static Path, Error> {
+    dir!(|x| x.data_dir())
+}
+#[inline]
+pub fn cache_dir() -> Result<&'static Path, Error> {
+    dir!(|x| x.cache_dir())
 }
 
 #[inline]
-pub fn app_cache_dir<P: AsRef<Path>>(prefix: P) -> PathBuf {
-    BASE_DIRS
-        .data_local_dir()
-        .join(prefix.as_ref())
-        .join("cache")
+pub fn app_data_dir<P: Into<PathBuf>>(prefix: P) -> Result<PathBuf, Error> {
+    AppDirs::new(prefix).map(|x| x.data_dir().to_path_buf())
 }
 
 #[inline]
-pub fn app_log_dir<P: AsRef<Path>>(prefix: P) -> PathBuf {
-    BASE_DIRS.data_local_dir().join(prefix.as_ref()).join("log")
+pub fn app_config_dir<P: Into<PathBuf>>(prefix: P) -> Result<PathBuf, Error> {
+    AppDirs::new(prefix).map(|x| x.config_dir().to_path_buf())
 }
 
 #[inline]
-pub fn app_temporary_dir<P: AsRef<Path>>(prefix: P) -> PathBuf {
-    app_cache_dir(prefix).join("tmp")
+pub fn app_log_dir<P: Into<PathBuf>>(prefix: P) -> Result<PathBuf, Error> {
+    AppDirs::new(prefix).map(|x| x.log_dir().to_path_buf())
 }
 
 #[inline]
-pub fn local_dir() -> PathBuf {
-    BASE_DIRS.data_local_dir().to_path_buf()
+pub fn app_cache_dir<P: Into<PathBuf>>(prefix: P) -> Result<PathBuf, Error> {
+    AppDirs::new(prefix).map(|x| x.cache_dir().to_path_buf())
 }
 
 #[inline]
-pub fn roaming_dir() -> PathBuf {
-    BASE_DIRS.data_dir().to_path_buf()
+pub fn app_temporary_dir<P: Into<PathBuf>>(prefix: P) -> Result<PathBuf, Error> {
+    AppDirs::new(prefix).map(|x| x.temporary_dir().to_path_buf())
 }
 
 pub mod iri {
+    use crate::{Error, ResolveError};
     use iref::IriBuf;
-    use std::path::Path;
+    use std::path::PathBuf;
 
     #[inline]
-    pub fn app_temporary_dir<P: AsRef<Path>>(prefix: P) -> IriBuf {
-        crate::file_path(super::app_temporary_dir(prefix))
+    pub fn app_cache_dir<P: Into<PathBuf>>(prefix: P) -> Result<IriBuf, Error> {
+        super::app_cache_dir(prefix).and_then(|x| Ok(crate::file_path(x)?))
     }
 
     #[inline]
-    pub fn app_cache_dir<P: AsRef<Path>>(prefix: P) -> IriBuf {
-        crate::file_path(super::app_cache_dir(prefix))
+    pub fn app_temporary_dir<P: Into<PathBuf>>(prefix: P) -> Result<IriBuf, Error> {
+        super::app_cache_dir(prefix).and_then(|x| Ok(crate::file_path(x)?))
     }
 
-    pub fn resolve(iri: &iref::IriBuf) -> Result<std::path::PathBuf, crate::ResolveError> {
+    pub fn resolve(iri: &iref::IriBuf) -> Result<PathBuf, ResolveError> {
         match iri.scheme().as_str() {
-            "file" => {
-                if let Some(first) = iri.path().first() {
-                    if first.len() != 2
-                        || !first.as_str().chars().next().unwrap().is_ascii_alphabetic()
-                        || first.as_str().chars().nth(1).unwrap() != ':'
-                    {
-                        return Err(crate::ResolveError::PlatformSpecific(format!(
-                            "Invalid drive letter. Got: {}",
-                            first.as_str()
-                        )));
-                    }
-                } else {
-                    return Err(crate::ResolveError::EmptyIri);
-                }
-                Ok(std::path::PathBuf::from(
-                    iri.path()
-                        .as_pct_str()
-                        .decode()
-                        .chars()
-                        .skip(1)
-                        .collect::<String>(),
-                ))
-            }
-            "container" => {
-                let mut path = iri.path().as_pct_str().decode();
-                if path.starts_with("/") {
-                    path = path.chars().skip(1).collect::<String>();
-                }
-                Ok(super::home_dir().join(path))
-            }
-            unhandled => Err(crate::ResolveError::InvalidScheme(unhandled.to_string())),
+            "file" => crate::resolve_file_iri(iri),
+            unhandled => Err(ResolveError::InvalidScheme(
+                unhandled.to_string(),
+                &["file"],
+            )),
         }
     }
 }
@@ -121,7 +195,7 @@ mod tests {
         let expected = PathBuf::from(format!(r"C:\Users\{}\", &user));
 
         assert_eq!(
-            app_temporary_dir("Special Company/Bad App"),
+            app_temporary_dir("Special Company/Bad App").unwrap(),
             expected.join("AppData/Local/Special Company/Bad App/cache/tmp")
         )
     }
@@ -132,7 +206,7 @@ mod tests {
         let expected = PathBuf::from(format!(r"C:\Users\{}\", &user));
 
         assert_eq!(
-            app_data_dir("Special Company/Bad App"),
+            app_data_dir("Special Company/Bad App").unwrap(),
             expected.join("AppData/Roaming/Special Company/Bad App/")
         )
     }
@@ -140,7 +214,15 @@ mod tests {
     #[test]
     fn iri_file() {
         let expected = PathBuf::from(r"C:\Program Files\Bad Idea");
-        let iri = crate::file_path(r"C:\Program Files\Bad Idea");
+        let iri = crate::file_path(r"C:\Program Files\Bad Idea").unwrap();
+
+        assert_eq!(expected, super::iri::resolve(&iri).unwrap());
+    }
+
+    #[test]
+    fn iri_unc_path() {
+        let expected = PathBuf::from(r"\\?\C:\Program Files\Bad Idea");
+        let iri = crate::file_path(r"\\?\C:\Program Files\Bad Idea").unwrap();
 
         assert_eq!(expected, super::iri::resolve(&iri).unwrap());
     }

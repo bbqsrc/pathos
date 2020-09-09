@@ -7,13 +7,16 @@ edition = "2018"
 license = "Apache-2.0 OR MIT"
 
 [dependencies]
-dirs = { package = "dirs-next", version = "1.0.1" }
 directories = { package = "directories-next", version = "1.0.1" }
-iref = "1.1.5"
+iref = { path = "../iref" }
 thiserror = "1.0.20"
-once_cell = "1.4.0"
-log = "0.4.8"
-libc = "0.2.72"
+once_cell = "1.4.1"
+log = "0.4.11"
+libc = "0.2.76"
+home = "0.5.3"
+os_str_bytes = "2.3.2"
+percent-encoding = "2.1.0"
+eieio = "1.0.0"
 
 [dev-dependencies]
 whoami = "0.9.0"

@@ -1,5 +1,8 @@
-use std::os::unix::ffi::OsStrExt;
-use std::path::{Path, PathBuf};
+use std::os::{raw::c_char, unix::ffi::OsStrExt};
+use std::{
+    ffi::{CStr, OsStr},
+    path::{Path, PathBuf},
+};
 
 use once_cell::sync::OnceCell;
 
@@ -20,8 +23,9 @@ pub fn app_temporary_dir<P: AsRef<Path>>(prefix: P) -> PathBuf {
 pub mod iri {
     use super::CONTAINER_PATH;
 
+    use crate::{Error, ResolveError};
     use iref::IriBuf;
-    use std::convert::TryInto;
+    use std::{convert::TryInto, path::PathBuf};
 
     #[inline]
     pub fn app_cache_dir<P: AsRef<str>>(prefix: P) -> IriBuf {
@@ -34,24 +38,23 @@ pub mod iri {
     }
 
     #[inline]
-    pub fn app_temporary_dir<P: AsRef<str>>(prefix: P) -> IriBuf {
-        crate::file_path(super::app_temporary_dir(prefix.as_ref()))
+    pub fn app_temporary_dir<P: AsRef<str>>(prefix: P) -> Result<IriBuf, Error> {
+        Ok(crate::file_path(super::app_temporary_dir(prefix.as_ref()))?)
     }
 
-    pub fn resolve(iri: &iref::IriBuf) -> Result<std::path::PathBuf, crate::ResolveError> {
+    pub fn resolve(iri: &iref::IriBuf) -> Result<PathBuf, ResolveError> {
         match iri.scheme().as_str() {
-            "file" => Ok(std::path::PathBuf::from(iri.path().as_pct_str().decode())),
+            "file" => crate::resolve_file_iri(iri),
             "container" => {
-                let mut path = iri.path().as_pct_str().decode();
-                if path.starts_with("/") {
-                    path = path.chars().skip(1).collect::<String>();
-                }
-                Ok(CONTAINER_PATH
+                let prefix = CONTAINER_PATH
                     .get()
-                    .expect("no path set for container; call set_container_path.")
-                    .join(path))
+                    .expect("No path set for container; call `set_container_path`.");
+                crate::resolve_container_iri(prefix.to_owned(), iri)
             }
-            unhandled => Err(crate::ResolveError::InvalidScheme(unhandled.to_string())),
+            unhandled => Err(ResolveError::InvalidScheme(
+                unhandled.to_string(),
+                &["file", "container"],
+            )),
         }
     }
 }
@@ -59,14 +62,14 @@ pub mod iri {
 static CONTAINER_PATH: OnceCell<PathBuf> = OnceCell::new();
 
 #[no_mangle]
-extern "C" fn pathos_set_container_path(container_path: *const std::os::raw::c_char) {
+unsafe extern "C" fn pathos_set_container_path(container_path: *const c_char) {
     if container_path.is_null() {
         log::error!("Invalid `container_path` passed; no Android container set.");
         return;
     }
 
-    let c_str = unsafe { std::ffi::CStr::from_ptr(container_path) };
-    let os_str = std::ffi::OsStr::from_bytes(c_str.to_bytes());
+    let c_str = CStr::from_ptr(container_path);
+    let os_str = OsStr::from_bytes(c_str.to_bytes());
     let path: &Path = os_str.as_ref();
 
     let _ = CONTAINER_PATH.set(path.to_path_buf()).ok();
