@@ -122,7 +122,7 @@ pub fn roaming_dir() -> Result<&'static Path, Error> {
 
 #[inline]
 pub fn local_dir() -> Result<&'static Path, Error> {
-    data_dir()
+    cache_dir()
 }
 
 #[inline]

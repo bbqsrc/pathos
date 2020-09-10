@@ -13,7 +13,7 @@ iref = { package = "iref__bbqsrc", version = "1.1.5" }
 thiserror = "1.0.20"
 once_cell = "1.4.1"
 log = "0.4.11"
-libc = "0.2.76"
+libc = "0.2.77"
 home = "0.5.3"
 os_str_bytes = "2.3.2"
 percent-encoding = "2.1.0"
