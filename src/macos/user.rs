@@ -16,6 +16,25 @@ pub struct Dirs {
     cache_dir: PathBuf,
     log_dir: PathBuf,
     prefs_dir: PathBuf,
+    services_dir: PathBuf,
+}
+
+impl Dirs {
+    fn application_support_dir(&self) -> &Path {
+        &self.data_dir
+    }
+
+    fn log_dir(&self) -> &Path {
+        &self.log_dir
+    }
+
+    fn preferences_dir(&self) -> &Path {
+        &self.prefs_dir
+    }
+    
+    fn services_dir(&self) -> &Path {
+        &self.services_dir
+    }
 }
 
 impl UserDirs for Dirs {
@@ -28,6 +47,7 @@ impl UserDirs for Dirs {
             cache_dir: lib_dir.join("Caches"),
             log_dir: lib_dir.join("Logs"),
             prefs_dir: lib_dir.join("Preferences"),
+            services_dir: lib_dir.join("Services"),
             home_dir,
         })
     }
@@ -117,20 +137,6 @@ impl crate::AppDirs for AppDirs {
     }
 }
 
-impl Dirs {
-    fn application_support_dir(&self) -> &Path {
-        &self.data_dir
-    }
-
-    fn log_dir(&self) -> &Path {
-        &self.log_dir
-    }
-
-    fn preferences_dir(&self) -> &Path {
-        &self.prefs_dir
-    }
-}
-
 #[inline]
 pub fn application_support_dir() -> Result<&'static Path, Error> {
     dir!(|x| x.application_support_dir())
@@ -154,6 +160,11 @@ pub fn cache_dir() -> Result<&'static Path, Error> {
 #[inline]
 pub fn log_dir() -> Result<&'static Path, Error> {
     dir!(|x| x.log_dir())
+}
+
+#[inline]
+pub fn services_dir() -> Result<&'static Path, Error> {
+    dir!(|x| x.services_dir())
 }
 
 #[inline]

@@ -3,6 +3,11 @@ use std::path::{Path, PathBuf};
 use crate::Error;
 
 #[inline]
+pub fn services_dir() -> &'static Path {
+    "/Library/Services".as_ref()
+}
+
+#[inline]
 pub fn application_support_dir() -> &'static Path {
     "/Library/Application Support".as_ref()
 }
