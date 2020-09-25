@@ -27,7 +27,7 @@ pub fn log_dir() -> &'static Path {
     "/Library/Logs".as_ref()
 }
 
-struct AppDirs {
+pub struct AppDirs {
     data_dir: PathBuf,
     config_dir: PathBuf,
     cache_dir: PathBuf,
