@@ -5,11 +5,6 @@ use crate::{AppDirs as _, Error, UserDirs};
 
 static DIRS: Lazy<Result<Dirs, Error>> = Lazy::new(|| Dirs::new());
 
-#[inline]
-pub(crate) fn home_dir() -> Result<PathBuf, Error> {
-    home::home_dir().ok_or_else(|| Error::NoHomeDirectory)
-}
-
 pub struct Dirs {
     home_dir: PathBuf,
     data_dir: PathBuf,
@@ -39,7 +34,7 @@ impl Dirs {
 
 impl UserDirs for Dirs {
     fn new() -> Result<Self, Error> {
-        let home_dir = home_dir()?;
+        let home_dir = home::home_dir().ok_or_else(|| Error::NoHomeDirectory)?;
         let lib_dir = home_dir.join("Library");
 
         Ok(Self {
@@ -135,6 +130,11 @@ impl crate::AppDirs for AppDirs {
     fn temporary_dir(&self) -> &Path {
         &self.temporary_dir
     }
+}
+
+#[inline]
+pub fn home_dir() -> Result<&'static Path, Error> {
+    dir!(|x| x.home_dir())   
 }
 
 #[inline]
