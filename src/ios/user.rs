@@ -49,7 +49,7 @@ pub mod iri {
     pub fn resolve(iri: &iref::IriBuf) -> Result<PathBuf, ResolveError> {
         match iri.scheme().as_str() {
             "file" => crate::resolve_file_iri(iri),
-            "container" => crate::resolve_container_iri(super::home_dir()?, iri),
+            "container" => crate::resolve_container_iri(super::home_dir()?.to_path_buf(), iri),
             unhandled => Err(ResolveError::InvalidScheme(
                 unhandled.to_string(),
                 &["file", "container"],

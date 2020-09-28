@@ -79,6 +79,9 @@ pub enum IriError {
     #[error("Unsupported prefix.")]
     UnsupportedPrefix,
 
+    #[error("Relative paths cannto be converted into file:// IRIs.")]
+    RelativePath,
+
     #[error("Failed to parse input as an IRI.")]
     InvalidIri(iref::Error),
 }
@@ -121,16 +124,22 @@ fn os_str_to_cow_str<'a>(os_str: &'a OsStr) -> Cow<'a, str> {
 #[inline]
 fn resolve_file_iri(iri: &IriBuf) -> Result<PathBuf, ResolveError> {
     if iri.path().first().is_some() {
-        let mut segments = iri.path().into_iter().map(|segment| -> OsString {
+        let segments = iri.path().into_iter().map(|segment| -> OsString {
             let bytes: Cow<'_, [u8]> = percent_decode_str(segment.as_str()).into();
             // This should never panic, and according to the documentation,
             // panicking here is the correct behaviour if it _does_ break an invariant and fail.
             OsString::from_bytes(bytes)
                 .expect("Invariant failed to be upheld: invalid OS string data")
         });
-        let start = segments.next().unwrap();
+
+        let mut start = PathBuf::new();
+        if cfg!(unix) {
+            start.push("/");
+        }
+
+        // let start = segments.next().unwrap();
         Ok(segments
-            .fold(start, |mut acc: OsString, cur: OsString| {
+            .fold(start, |mut acc: PathBuf, cur: OsString| {
                 acc.push(cur);
                 acc
             })
@@ -163,7 +172,10 @@ fn resolve_container_iri(prefix: PathBuf, iri: &IriBuf) -> Result<PathBuf, Resol
 }
 
 pub fn file_path<P: AsRef<Path>>(path: P) -> Result<IriBuf, IriError> {
-    let input = once(Ok(Cow::Borrowed("file:///")))
+    if !path.as_ref().is_absolute() {
+        return Err(IriError::RelativePath);
+    }
+    let input = once(Ok(Cow::Borrowed("file:/")))
         .chain(path.as_ref().components().map(|c| {
             Ok(match c {
                 Component::Prefix(prefix) => match prefix.kind() {
@@ -195,6 +207,24 @@ pub fn file_path<P: AsRef<Path>>(path: P) -> Result<IriBuf, IriError> {
         .collect::<Result<Vec<_>, _>>()?
         .join("/");
     IriBuf::new(&input).map_err(IriError::InvalidIri)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn file_iri() {
+        let iri = IriBuf::new("file:///Library/Caches/Pahkat").unwrap();
+        let value = resolve_file_iri(&iri).unwrap();
+        println!("{:?}", value);
+    }
+
+    #[test]
+    fn iri_from_path() {
+        let path = file_path(&Path::new("////Library/Caches/Pahkat")).unwrap();
+        println!("{}", path);
+    }
 }
 
 pub trait AppDirs: Sized {

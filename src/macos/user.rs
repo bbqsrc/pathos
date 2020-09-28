@@ -26,7 +26,7 @@ impl Dirs {
     fn preferences_dir(&self) -> &Path {
         &self.prefs_dir
     }
-    
+
     fn services_dir(&self) -> &Path {
         &self.services_dir
     }
@@ -134,7 +134,7 @@ impl crate::AppDirs for AppDirs {
 
 #[inline]
 pub fn home_dir() -> Result<&'static Path, Error> {
-    dir!(|x| x.home_dir())   
+    dir!(|x| x.home_dir())
 }
 
 #[inline]
