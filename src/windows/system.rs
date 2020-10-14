@@ -7,7 +7,7 @@ fn config_dir() -> &'static Path {
     r"C:\ProgramData\".as_ref()
 }
 
-struct AppDirs {
+pub struct AppDirs {
     data_dir: PathBuf,
     config_dir: PathBuf,
     cache_dir: PathBuf,

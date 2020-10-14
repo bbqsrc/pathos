@@ -43,7 +43,7 @@ impl UserDirs for Dirs {
     }
 }
 
-struct AppDirs {
+pub struct AppDirs {
     data_dir: PathBuf,
     config_dir: PathBuf,
     cache_dir: PathBuf,
