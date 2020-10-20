@@ -1,7 +1,7 @@
 pub use crate::macos::user::*;
 
 pub mod iri {
-    use crate::ResolveError;
+    use crate::{Error, ResolveError};
     use iref::IriBuf;
     use std::{convert::TryInto, path::PathBuf};
 
@@ -11,7 +11,7 @@ pub mod iri {
     }
 
     #[inline]
-    pub(super) fn library_dir<P: AsRef<str>>(x: &str, prefix: P) -> IriBuf {
+    pub(super) fn library_dir<P: AsRef<str>>(x: &str, prefix: P) -> Result<IriBuf, Error> {
         let mut iri = IriBuf::new("container:/Library/").unwrap();
 
         for item in x.split("/") {
@@ -23,27 +23,30 @@ pub mod iri {
         }
 
         iri.path_mut().open();
-        iri
+        Ok(iri)
     }
 
     #[inline]
-    pub fn app_config_dir<P: AsRef<str>>(prefix: P) -> IriBuf {
+    pub fn app_config_dir<P: AsRef<str>>(prefix: P) -> Result<IriBuf, Error> {
         library_dir("Preferences", prefix)
     }
 
     #[inline]
-    pub fn app_cache_dir<P: AsRef<str>>(prefix: P) -> IriBuf {
+    pub fn app_cache_dir<P: AsRef<str>>(prefix: P) -> Result<IriBuf, Error> {
         library_dir("Caches", prefix)
     }
 
     #[inline]
-    pub fn app_log_dir<P: AsRef<str>>(prefix: P) -> IriBuf {
+    pub fn app_log_dir<P: AsRef<str>>(prefix: P) -> Result<IriBuf, Error> {
         library_dir("Logs", prefix)
     }
 
     #[inline]
-    pub fn app_temporary_dir<P: AsRef<str>>(prefix: P) -> IriBuf {
-        library_dir("Caches/tmp", prefix)
+    pub fn app_temporary_dir<P: AsRef<str>>(prefix: P) -> Result<IriBuf, Error> {
+       let mut path = app_cache_dir(prefix)?;
+       path.path_mut().push("tmp".try_into().unwrap());
+       path.path_mut().open();
+       Ok(path)
     }
 
     pub fn resolve(iri: &iref::IriBuf) -> Result<PathBuf, ResolveError> {
@@ -55,5 +58,10 @@ pub mod iri {
                 &["file", "container"],
             )),
         }
+    }
+
+    #[test]
+    fn smoke_test() {
+        println!("{:?}", app_temporary_dir("meow").unwrap());
     }
 }
