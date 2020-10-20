@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use crate::Error;
 
-struct AppDirs {
+pub struct AppDirs {
     data_dir: PathBuf,
     config_dir: PathBuf,
     cache_dir: PathBuf,
