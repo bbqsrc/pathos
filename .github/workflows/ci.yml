@@ -3,7 +3,36 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-  check:
+  test-ios:
+    name: Tests (iOS)
+    runs-on: macos-latest
+    continue-on-error: ${{ matrix.toolchain == 'nightly' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        toolchain: [stable, beta, nightly]
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+      - name: Create simulator
+        run: xcrun simctl create rust-test 'iPhone X'
+      - name: Install toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.toolchain }}
+          target: x86_64-apple-ios
+          override: true
+      - name: Build cargo test
+        id: build
+        run: |
+          test_exe=`cargo test --target x86_64-apple-ios --no-run --message-format=json | jq 'select (.executable != null) .executable'`
+          echo "::set-output name=TEST_EXE::$test_exe"
+      - name: Boot simulator
+        run: xcrun simctl boot rust-test
+      - name: Run test in simulator
+        run: xcrun simctl spawn rust-test ${{ steps.build.outputs.TEST_EXE }}
+  test:
     name: Test Suite
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.toolchain == 'nightly' }}
