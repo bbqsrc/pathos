@@ -1,11 +1,13 @@
 [package]
 name = "pathos"
-description = "A natural API for finding OS-specific user or system directories, regardless of the operating system."
-version = "0.2.0-pre.11"
+description = "A natural API for handling OS-specific user or system directories, including iOS and Android."
+version = "0.2.0"
 authors = ["Brendan Molloy <brendan@bbqsrc.net>"]
 edition = "2018"
 license = "Apache-2.0 OR MIT"
 repository = "https://github.com/bbqsrc/pathos"
+categories = ["filesystem", "os", "os::linux-apis", "os::macos-apis", "os::windows-apis"]
+keywords = ["path", "os", "project", "dirs"]
 
 [dependencies]
 iref = "1.4.3"
