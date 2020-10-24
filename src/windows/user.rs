@@ -185,7 +185,7 @@ pub mod iri {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(windows, test))]
 mod tests {
     use super::*;
 
@@ -221,7 +221,7 @@ mod tests {
 
     #[test]
     fn iri_unc_path() {
-        let expected = PathBuf::from(r"\\?\C:\Program Files\Bad Idea");
+        let expected = PathBuf::from(r"C:\Program Files\Bad Idea");
         let iri = crate::file_path(r"\\?\C:\Program Files\Bad Idea").unwrap();
 
         assert_eq!(expected, super::iri::resolve(&iri).unwrap());
@@ -229,14 +229,13 @@ mod tests {
 
     #[test]
     fn iri_container() {
-        let user = whoami::username();
-        let expected = PathBuf::from(format!(
-            r"C:\Users\{}\AppData\Local\Special Company\Bad App\log",
-            user
-        ));
+        let expected = crate::ResolveError::InvalidScheme("container".into(), &["file"]);
         let iri =
             iref::IriBuf::new("container:/AppData/Local/Special%20Company/Bad%20App/log").unwrap();
 
-        assert_eq!(expected, super::iri::resolve(&iri).unwrap());
+        assert_eq!(
+            std::mem::discriminant(&expected), 
+            std::mem::discriminant(&super::iri::resolve(&iri).unwrap_err())
+        );
     }
 }

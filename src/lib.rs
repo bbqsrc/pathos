@@ -45,7 +45,7 @@ pub use windows::user;
 
 use iref::IriBuf;
 use os_str_bytes::{OsStrBytes, OsStringBytes};
-use percent_encoding::{percent_decode_str, percent_encode, NON_ALPHANUMERIC};
+use percent_encoding::{NON_ALPHANUMERIC, percent_decode_str, percent_encode};
 use std::{
     borrow::Cow,
     ffi::{OsStr, OsString},
@@ -100,46 +100,36 @@ pub enum Error {
 
 #[inline(always)]
 fn os_str_to_cow_str<'a>(os_str: &'a OsStr) -> Cow<'a, str> {
-    match os_str.to_str() {
-        Some(v) => Cow::Borrowed(v),
-        None => {
-            let bytes = os_str.to_bytes();
-            let mut iter = percent_encode(&bytes, NON_ALPHANUMERIC);
-            match iter.next() {
-                None => "".into(),
-                Some(first) => match iter.next() {
-                    None => unreachable!(),
-                    Some(second) => {
-                        let mut string = first.to_owned();
-                        string.push_str(second);
-                        string.extend(iter);
-                        string.into()
-                    }
-                },
-            }
-        }
-    }
+    let bytes = os_str.to_bytes();
+    let iter = percent_encode(&bytes, NON_ALPHANUMERIC);
+    // TODO: optimise this again, was buggy before and so we only do Owned for now.
+    Cow::Owned(iter.to_string())
 }
 
 #[inline]
 fn resolve_file_iri(iri: &IriBuf) -> Result<PathBuf, ResolveError> {
     if iri.path().first().is_some() {
-        let segments = iri.path().into_iter().map(|segment| -> OsString {
+        let mut segments = iri.path().into_iter().map(|segment| -> OsString {
             let bytes: Cow<'_, [u8]> = percent_decode_str(segment.as_str()).into();
             // This should never panic, and according to the documentation,
             // panicking here is the correct behaviour if it _does_ break an invariant and fail.
             OsString::from_bytes(bytes)
                 .expect("Invariant failed to be upheld: invalid OS string data")
         });
-
-        let mut start = PathBuf::new();
+        
+        let mut start = OsString::new();
         if cfg!(unix) {
             start.push("/");
+        } else {
+            start.push(segments.next().unwrap())
         }
 
-        // let start = segments.next().unwrap();
+        let sep = OsString::from(std::path::MAIN_SEPARATOR.to_string());
+
         Ok(segments
-            .fold(start, |mut acc: PathBuf, cur: OsString| {
+            .fold(start, |mut acc: OsString, cur: OsString| {
+                println!("CUR: {:?}", &cur);
+                acc.push(&sep);
                 acc.push(cur);
                 acc
             })
@@ -176,36 +166,33 @@ pub fn file_path<P: AsRef<Path>>(path: P) -> Result<IriBuf, IriError> {
         return Err(IriError::RelativePath);
     }
     let input = once(Ok(Cow::Borrowed("file:/")))
-        .chain(path.as_ref().components().map(|c| {
-            Ok(match c {
+        .chain(path.as_ref().components().filter_map(|c| {
+            Some(Ok(match c {
                 Component::Prefix(prefix) => match prefix.kind() {
                     Prefix::Verbatim(verbatim) => os_str_to_cow_str(verbatim),
-                    Prefix::VerbatimUNC(server, share) => Cow::Owned(format!(
+                    Prefix::DeviceNS(_) => return Some(Err(IriError::UnsupportedPrefix)),
+                    Prefix::UNC(server, share) | Prefix::VerbatimUNC(server, share) => Cow::Owned(format!(
                         "{}/{}",
                         os_str_to_cow_str(server),
                         os_str_to_cow_str(share)
                     )),
-                    Prefix::VerbatimDisk(disk) => {
-                        Cow::Owned(unsafe { std::str::from_utf8_unchecked(&[disk]) }.to_string())
-                    }
-                    Prefix::DeviceNS(_) => return Err(IriError::UnsupportedPrefix),
-                    Prefix::UNC(server, share) => Cow::Owned(format!(
-                        "{}/{}",
-                        os_str_to_cow_str(server),
-                        os_str_to_cow_str(share)
-                    )),
-                    Prefix::Disk(disk) => {
-                        Cow::Owned(unsafe { std::str::from_utf8_unchecked(&[disk]) }.to_string())
+                    Prefix::Disk(disk) | Prefix::VerbatimDisk(disk) => {
+                        Cow::Owned(format!("/{}:", unsafe { std::str::from_utf8_unchecked(&[disk]) }))
                     }
                 },
+                #[cfg(windows)]
+                Component::RootDir => return None,
+                #[cfg(unix)]
                 Component::RootDir => Cow::Borrowed(""),
-                Component::CurDir => return Err(IriError::InvalidComponent),
-                Component::ParentDir => return Err(IriError::InvalidComponent),
+                Component::CurDir => return Some(Err(IriError::InvalidComponent)),
+                Component::ParentDir => return Some(Err(IriError::InvalidComponent)),
                 Component::Normal(value) => os_str_to_cow_str(value),
-            })
+            }))
         }))
         .collect::<Result<Vec<_>, _>>()?
         .join("/");
+    
+    println!("{}", input);
     IriBuf::new(&input).map_err(IriError::InvalidIri)
 }
 
@@ -222,8 +209,20 @@ mod tests {
 
     #[test]
     fn iri_from_path() {
-        let path = file_path(&Path::new("////Library/Caches/Pahkat")).unwrap();
-        println!("{}", path);
+        let path = file_path(&Path::new("////Library/Caches/Pahkat"));
+        #[cfg(windows)]
+        assert!(path.is_err());
+        #[cfg(unix)]
+        assert!(path.is_ok());
+        println!("{:?}", path);
+
+        let path = file_path(&Path::new(r"C:\ProgramData\Pahkat\logs"));
+        #[cfg(windows)]
+        assert!(path.is_ok());
+        #[cfg(unix)]
+        assert!(path.is_err());
+
+        println!("{:?}", path);
     }
 }
 
