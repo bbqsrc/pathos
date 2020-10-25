@@ -119,17 +119,22 @@ pub fn app_log_dir<P: AsRef<Path>>(prefix: P) -> PathBuf {
 }
 
 pub mod iri {
+    use crate::path::absolute::AbsolutePathBufExt;
     use crate::Error;
     use iref::IriBuf;
     use std::path::Path;
 
     #[inline]
     pub fn app_temporary_dir<P: AsRef<Path>>(prefix: P) -> Result<IriBuf, Error> {
-        Ok(crate::file_path(super::app_temporary_dir(prefix))?)
+        Ok(super::app_temporary_dir(prefix)
+            .to_absolute_path_buf()?
+            .to_file_iri()?)
     }
 
     #[inline]
     pub fn app_cache_dir<P: AsRef<Path>>(prefix: P) -> Result<IriBuf, Error> {
-        Ok(crate::file_path(super::app_cache_dir(prefix))?)
+        Ok(super::app_cache_dir(prefix)
+            .to_absolute_path_buf()?
+            .to_file_iri()?)
     }
 }

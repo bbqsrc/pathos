@@ -26,6 +26,7 @@ jobs:
       - name: Build cargo test
         id: build
         run: |
+          cargo test --target x86_64-apple-ios --no-run
           test_exe=`cargo test --target x86_64-apple-ios --no-run --message-format=json | jq 'select (.executable != null) .executable'`
           echo "::set-output name=TEST_EXE::$test_exe"
       - name: Boot simulator

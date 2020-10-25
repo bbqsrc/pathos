@@ -1,4 +1,4 @@
-mod absolute;
+pub mod absolute;
 
 #[cfg(windows)]
 pub const PATH_SEP_STR: &str = r"\";

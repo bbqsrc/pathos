@@ -160,34 +160,31 @@ pub fn app_temporary_dir<P: Into<PathBuf>>(prefix: P) -> Result<PathBuf, Error> 
 }
 
 pub mod iri {
-    use crate::{Error, ResolveError};
+    use crate::path::absolute::AbsolutePathBufExt;
+    use crate::Error;
     use iref::IriBuf;
     use std::path::PathBuf;
 
     #[inline]
     pub fn app_cache_dir<P: Into<PathBuf>>(prefix: P) -> Result<IriBuf, Error> {
-        super::app_cache_dir(prefix).and_then(|x| Ok(crate::file_path(x)?))
+        Ok(super::app_cache_dir(prefix)?
+            .to_absolute_path_buf()?
+            .to_file_iri()?)
     }
 
     #[inline]
     pub fn app_temporary_dir<P: Into<PathBuf>>(prefix: P) -> Result<IriBuf, Error> {
-        super::app_cache_dir(prefix).and_then(|x| Ok(crate::file_path(x)?))
-    }
-
-    pub fn resolve(iri: &iref::IriBuf) -> Result<PathBuf, ResolveError> {
-        match iri.scheme().as_str() {
-            "file" => crate::resolve_file_iri(iri),
-            unhandled => Err(ResolveError::InvalidScheme(
-                unhandled.to_string(),
-                &["file"],
-            )),
-        }
+        Ok(super::app_temporary_dir(prefix)?
+            .to_absolute_path_buf()?
+            .to_file_iri()?)
     }
 }
 
 #[cfg(all(windows, test))]
 mod tests {
     use super::*;
+    use crate::iri::IriBufExt;
+    use crate::path::absolute::AbsolutePathBufExt;
 
     #[test]
     fn basic_app() {
@@ -212,30 +209,52 @@ mod tests {
     }
 
     #[test]
+    fn relative_path() {
+        let badpath = PathBuf::from(r"C:Program Files\Bad Idea");
+        assert!(badpath.to_absolute_path_buf().is_err())
+    }
+
+    #[test]
+    fn relative_path2() {
+        let badpath = PathBuf::from(r"C:\Program Files\..\Bad Idea");
+        println!("{:?}", badpath);
+        assert!(badpath.to_absolute_path_buf().is_err())
+    }
+
+    #[test]
     fn iri_file() {
         let expected = PathBuf::from(r"C:\Program Files\Bad Idea");
-        let iri = crate::file_path(r"C:\Program Files\Bad Idea").unwrap();
-
-        assert_eq!(expected, super::iri::resolve(&iri).unwrap());
+        let iri = expected
+            .to_absolute_path_buf()
+            .unwrap()
+            .to_file_iri()
+            .unwrap();
+        assert_eq!(expected, iri.to_path_buf().unwrap());
     }
 
     #[test]
     fn iri_unc_path() {
-        let expected = PathBuf::from(r"C:\Program Files\Bad Idea");
-        let iri = crate::file_path(r"\\?\C:\Program Files\Bad Idea").unwrap();
-
-        assert_eq!(expected, super::iri::resolve(&iri).unwrap());
+        let expected = PathBuf::from(r"\\?\C:\Program Files\Bad Idea");
+        let iri = expected
+            .to_absolute_path_buf()
+            .unwrap()
+            .to_file_iri()
+            .unwrap();
+        assert_eq!(
+            PathBuf::from(r"C:\Program Files\Bad Idea"),
+            iri.to_path_buf().unwrap()
+        );
     }
 
     #[test]
     fn iri_container() {
-        let expected = crate::ResolveError::InvalidScheme("container".into(), &["file"]);
+        let expected = crate::iri::Error::InvalidScheme("container".into(), &["file"]);
         let iri =
             iref::IriBuf::new("container:/AppData/Local/Special%20Company/Bad%20App/log").unwrap();
 
         assert_eq!(
             std::mem::discriminant(&expected),
-            std::mem::discriminant(&super::iri::resolve(&iri).unwrap_err())
+            std::mem::discriminant(&iri.to_path_buf().unwrap_err())
         );
     }
 }

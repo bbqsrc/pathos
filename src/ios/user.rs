@@ -1,9 +1,10 @@
+// Re-export all macOS items as iOS items.
 pub use crate::macos::user::*;
 
 pub mod iri {
-    use crate::{Error, ResolveError};
+    use crate::Error;
     use iref::IriBuf;
-    use std::{convert::TryInto, path::PathBuf};
+    use std::convert::TryInto;
 
     #[inline]
     pub fn home_dir() -> IriBuf {
@@ -48,20 +49,12 @@ pub mod iri {
         path.path_mut().open();
         Ok(path)
     }
+}
 
-    pub fn resolve(iri: &iref::IriBuf) -> Result<PathBuf, ResolveError> {
-        match iri.scheme().as_str() {
-            "file" => crate::resolve_file_iri(iri),
-            "container" => crate::resolve_container_iri(super::home_dir()?.to_path_buf(), iri),
-            unhandled => Err(ResolveError::InvalidScheme(
-                unhandled.to_string(),
-                &["file", "container"],
-            )),
-        }
-    }
-
+#[cfg(test)]
+mod tests {
     #[test]
     fn smoke_test() {
-        println!("{:?}", app_temporary_dir("meow").unwrap());
+        println!("{:?}", super::iri::app_temporary_dir("meow").unwrap());
     }
 }

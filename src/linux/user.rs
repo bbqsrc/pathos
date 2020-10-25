@@ -144,27 +144,21 @@ pub fn app_temporary_dir<P: Into<PathBuf>>(prefix: P) -> Result<PathBuf, Error> 
 }
 
 pub mod iri {
-    use crate::{Error, ResolveError};
+    use crate::{path::absolute::AbsolutePathBufExt, Error};
     use iref::IriBuf;
     use std::path::PathBuf;
 
     #[inline]
     pub fn app_cache_dir<P: Into<PathBuf>>(prefix: P) -> Result<IriBuf, Error> {
-        super::app_cache_dir(prefix).and_then(|x| Ok(crate::file_path(x)?))
+        Ok(super::app_cache_dir(prefix)?
+            .to_absolute_path_buf()?
+            .to_file_iri()?)
     }
 
     #[inline]
     pub fn app_temporary_dir<P: Into<PathBuf>>(prefix: P) -> Result<IriBuf, Error> {
-        super::app_cache_dir(prefix).and_then(|x| Ok(crate::file_path(x)?))
-    }
-
-    pub fn resolve(iri: &iref::IriBuf) -> Result<PathBuf, ResolveError> {
-        match iri.scheme().as_str() {
-            "file" => crate::resolve_file_iri(iri),
-            unhandled => Err(ResolveError::InvalidScheme(
-                unhandled.to_string(),
-                &["file"],
-            )),
-        }
+        Ok(super::app_temporary_dir(prefix)?
+            .to_absolute_path_buf()?
+            .to_file_iri()?)
     }
 }

@@ -21,11 +21,9 @@ pub fn app_temporary_dir<P: AsRef<Path>>(prefix: P) -> PathBuf {
 }
 
 pub mod iri {
-    use super::CONTAINER_PATH;
-
-    use crate::{Error, ResolveError};
+    use crate::{path::absolute::AbsolutePathBufExt, Error};
     use iref::IriBuf;
-    use std::{convert::TryInto, path::PathBuf};
+    use std::convert::TryInto;
 
     #[inline]
     pub fn app_cache_dir<P: AsRef<str>>(prefix: P) -> IriBuf {
@@ -39,27 +37,13 @@ pub mod iri {
 
     #[inline]
     pub fn app_temporary_dir<P: AsRef<str>>(prefix: P) -> Result<IriBuf, Error> {
-        Ok(crate::file_path(super::app_temporary_dir(prefix.as_ref()))?)
-    }
-
-    pub fn resolve(iri: &iref::IriBuf) -> Result<PathBuf, ResolveError> {
-        match iri.scheme().as_str() {
-            "file" => crate::resolve_file_iri(iri),
-            "container" => {
-                let prefix = CONTAINER_PATH
-                    .get()
-                    .expect("No path set for container; call `set_container_path`.");
-                crate::resolve_container_iri(prefix.to_owned(), iri)
-            }
-            unhandled => Err(ResolveError::InvalidScheme(
-                unhandled.to_string(),
-                &["file", "container"],
-            )),
-        }
+        Ok(super::app_temporary_dir(prefix.as_ref())
+            .to_absolute_path_buf()?
+            .to_file_iri()?)
     }
 }
 
-static CONTAINER_PATH: OnceCell<PathBuf> = OnceCell::new();
+pub(crate) static CONTAINER_PATH: OnceCell<PathBuf> = OnceCell::new();
 
 #[no_mangle]
 unsafe extern "C" fn pathos_set_container_path(container_path: *const c_char) {
