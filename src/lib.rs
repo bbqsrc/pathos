@@ -45,7 +45,7 @@ pub use windows::user;
 
 use iref::IriBuf;
 use os_str_bytes::{OsStrBytes, OsStringBytes};
-use percent_encoding::{NON_ALPHANUMERIC, percent_decode_str, percent_encode};
+use percent_encoding::{percent_decode_str, percent_encode, NON_ALPHANUMERIC};
 use std::{
     borrow::Cow,
     ffi::{OsStr, OsString},
@@ -116,7 +116,7 @@ fn resolve_file_iri(iri: &IriBuf) -> Result<PathBuf, ResolveError> {
             OsString::from_bytes(bytes)
                 .expect("Invariant failed to be upheld: invalid OS string data")
         });
-        
+
         let mut start = OsString::new();
         if cfg!(unix) {
             start.push("/");
@@ -171,13 +171,13 @@ pub fn file_path<P: AsRef<Path>>(path: P) -> Result<IriBuf, IriError> {
                 Component::Prefix(prefix) => match prefix.kind() {
                     Prefix::Verbatim(verbatim) => os_str_to_cow_str(verbatim),
                     Prefix::DeviceNS(_) => return Some(Err(IriError::UnsupportedPrefix)),
-                    Prefix::UNC(server, share) | Prefix::VerbatimUNC(server, share) => Cow::Owned(format!(
-                        "{}/{}",
-                        os_str_to_cow_str(server),
-                        os_str_to_cow_str(share)
-                    )),
+                    Prefix::UNC(server, share) | Prefix::VerbatimUNC(server, share) => Cow::Owned(
+                        format!("{}/{}", os_str_to_cow_str(server), os_str_to_cow_str(share)),
+                    ),
                     Prefix::Disk(disk) | Prefix::VerbatimDisk(disk) => {
-                        Cow::Owned(format!("/{}:", unsafe { std::str::from_utf8_unchecked(&[disk]) }))
+                        Cow::Owned(format!("/{}:", unsafe {
+                            std::str::from_utf8_unchecked(&[disk])
+                        }))
                     }
                 },
                 #[cfg(windows)]
@@ -191,7 +191,7 @@ pub fn file_path<P: AsRef<Path>>(path: P) -> Result<IriBuf, IriError> {
         }))
         .collect::<Result<Vec<_>, _>>()?
         .join("/");
-    
+
     println!("{}", input);
     IriBuf::new(&input).map_err(IriError::InvalidIri)
 }

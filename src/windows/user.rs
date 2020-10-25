@@ -234,7 +234,7 @@ mod tests {
             iref::IriBuf::new("container:/AppData/Local/Special%20Company/Bad%20App/log").unwrap();
 
         assert_eq!(
-            std::mem::discriminant(&expected), 
+            std::mem::discriminant(&expected),
             std::mem::discriminant(&super::iri::resolve(&iri).unwrap_err())
         );
     }

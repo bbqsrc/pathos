@@ -43,10 +43,10 @@ pub mod iri {
 
     #[inline]
     pub fn app_temporary_dir<P: AsRef<str>>(prefix: P) -> Result<IriBuf, Error> {
-       let mut path = app_cache_dir(prefix)?;
-       path.path_mut().push("tmp".try_into().unwrap());
-       path.path_mut().open();
-       Ok(path)
+        let mut path = app_cache_dir(prefix)?;
+        path.path_mut().push("tmp".try_into().unwrap());
+        path.path_mut().open();
+        Ok(path)
     }
 
     pub fn resolve(iri: &iref::IriBuf) -> Result<PathBuf, ResolveError> {
