@@ -94,9 +94,7 @@ fn resolve_file_iri(iri: &IriBuf) -> Result<AbsolutePathBuf, Error> {
         });
 
         let mut start = OsString::new();
-        if cfg!(unix) {
-            start.push("/");
-        } else {
+        if !cfg!(unix) {
             start.push(segments.next().unwrap())
         }
 
@@ -178,12 +176,12 @@ mod tests {
 
     #[test]
     fn iri_from_path() {
-        let path = PathBuf::from("////Library/Caches/Pahkat").to_absolute_path_buf();
+        let path = PathBuf::from("///////Library/Caches/Pahkat").to_absolute_path_buf();
+        println!("{:?}", path);
         #[cfg(windows)]
         assert!(path.is_err());
         #[cfg(unix)]
-        assert!(path.is_ok());
-        println!("{:?}", path);
+        assert_eq!(path.unwrap().to_path_buf(), PathBuf::from("/Library/Caches/Pahkat"));
 
         let path = PathBuf::from(r"C:\ProgramData\Pahkat\logs").to_absolute_path_buf();
         #[cfg(windows)]

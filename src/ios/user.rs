@@ -51,7 +51,7 @@ pub mod iri {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(target_os = "ios", test))]
 mod tests {
     #[test]
     fn smoke_test() {
