@@ -8,6 +8,8 @@ macro_rules! dir {
     }
 }
 
+pub mod path;
+
 #[cfg(any(feature = "android", target_os = "android"))]
 pub mod android;
 #[cfg(any(feature = "ios", target_os = "ios"))]
