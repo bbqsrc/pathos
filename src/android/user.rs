@@ -26,13 +26,13 @@ pub mod iri {
     use std::convert::TryInto;
 
     #[inline]
-    pub fn app_cache_dir<P: AsRef<str>>(prefix: P) -> IriBuf {
+    pub fn app_cache_dir<P: AsRef<str>>(prefix: P) -> Result<IriBuf, Error> {
         let mut iri = IriBuf::new("container:/cache/").unwrap();
         for item in prefix.as_ref().split("/") {
             iri.path_mut().push(item.try_into().unwrap());
         }
         iri.path_mut().open();
-        iri
+        Ok(iri)
     }
 
     #[inline]
