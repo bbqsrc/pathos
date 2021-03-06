@@ -34,7 +34,8 @@ impl Dirs {
 
 impl UserDirs for Dirs {
     fn new() -> Result<Self, Error> {
-        let home_dir = home::home_dir().ok_or_else(|| Error::NoHomeDirectory)?;
+        #[allow(deprecated)]
+        let home_dir = std::env::home_dir().ok_or_else(|| Error::NotFound("Home"))?;
         let lib_dir = home_dir.join("Library");
 
         Ok(Self {

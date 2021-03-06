@@ -4,7 +4,8 @@ use std::path::PathBuf;
 
 #[inline(always)]
 pub fn home_dir() -> Result<PathBuf, Error> {
-    home::home_dir().ok_or_else(|| Error::NoHomeDirectory)
+    #[allow(deprecated)]
+    std::env::home_dir().ok_or_else(|| Error::NotFound("Home"))
 }
 
 #[inline(always)]

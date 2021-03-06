@@ -7,7 +7,7 @@ edition = "2018"
 license = "Apache-2.0 OR MIT"
 repository = "https://github.com/bbqsrc/pathos"
 categories = ["filesystem", "os", "os::linux-apis", "os::macos-apis", "os::windows-apis"]
-keywords = ["path", "os", "project", "dirs"]
+keywords = ["paths", "dirs", "folders", "xdg"]
 
 [dependencies]
 iref = "1.4.3"
@@ -15,7 +15,6 @@ thiserror = "1.0.21"
 once_cell = "1.4.1"
 log = "0.4.11"
 libc = "0.2.79"
-home = "0.5.3"
 os_str_bytes = "2.3.2"
 percent-encoding = "2.1.0"
 eieio = "1.0.0"

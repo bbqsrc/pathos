@@ -50,8 +50,8 @@ use std::path::{Path, PathBuf};
 
 #[derive(Clone, Debug, thiserror::Error)]
 pub enum Error {
-    #[error("No home directory found!")]
-    NoHomeDirectory,
+    #[error("No directory found for: {0}")]
+    NotFound(&'static str),
 
     #[error("Failed to create directory for path: '{}'", .1.display())]
     CreateDirectoryFailed(#[source] eieio::Error, PathBuf),
