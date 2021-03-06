@@ -33,6 +33,14 @@ impl std::error::Error for TryFromError {}
 #[derive(Debug)]
 pub struct AbsolutePath(OsStr);
 
+impl Deref for AbsolutePath {
+    type Target = std::path::Path;
+
+    fn deref(&self) -> &Self::Target {
+        &std::path::Path::new(&self.0)
+    }
+}
+
 impl<'a> From<&'a AbsolutePath> for &'a std::path::Path {
     fn from(abs_path: &'a AbsolutePath) -> Self {
         &std::path::Path::new(&abs_path.0)
