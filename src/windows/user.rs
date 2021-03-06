@@ -6,19 +6,25 @@ use once_cell::sync::Lazy;
 static DIRS: Lazy<Result<Dirs, Error>> = Lazy::new(|| Dirs::new());
 
 #[inline]
-pub(crate) fn home_dir() -> Result<PathBuf, Error> {
-    home::home_dir().ok_or_else(|| Error::NoHomeDirectory)
+pub(crate) fn home_dir() -> Result<&'static Path, Error> {
+    windows_path!(windirs::FolderId::Profile)
+        .as_ref()
+        .map(|x| &**x)
+        .ok_or_else(|| Error::NotFound("Home"))
 }
 
 pub struct Dirs {
-    home_dir: PathBuf,
+    home_dir: &'static Path,
     roaming_dir: PathBuf,
     local_dir: PathBuf,
 }
 
 impl UserDirs for Dirs {
     fn new() -> Result<Self, Error> {
-        let home_dir = home_dir()?;
+        let home_dir = match home_dir() {
+            Ok(path) => path,
+            Err(e) => return Err(e.clone()),
+        };
         let appdata_dir = home_dir.join("AppData");
         let roaming_dir = appdata_dir.join("Roaming");
         let local_dir = appdata_dir.join("Local");
@@ -129,6 +135,7 @@ pub fn local_dir() -> Result<&'static Path, Error> {
 pub fn data_dir() -> Result<&'static Path, Error> {
     dir!(|x| x.data_dir())
 }
+
 #[inline]
 pub fn cache_dir() -> Result<&'static Path, Error> {
     dir!(|x| x.cache_dir())

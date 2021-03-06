@@ -2,9 +2,11 @@ use crate::Error;
 use std::path::{Path, PathBuf};
 
 #[inline]
-fn config_dir() -> &'static Path {
-    // TODO: use winapi to get the drive letter.
-    r"C:\ProgramData\".as_ref()
+fn config_dir() -> Result<&'static Path, Error> {
+    windows_path!(windirs::FolderId::ProgramData)
+        .as_ref()
+        .map(|x| &**x)
+        .ok_or_else(|| Error::NotFound("ProgramData"))
 }
 
 pub struct AppDirs {
@@ -22,8 +24,10 @@ impl crate::AppDirs for AppDirs {
     {
         let prefix = prefix.into();
 
-        let data_dir = config_dir().join(&prefix);
-        let cache_dir = config_dir().join(&prefix).join("cache");
+        let config_dir = config_dir()?;
+
+        let data_dir = config_dir.join(&prefix);
+        let cache_dir = data_dir.join("cache");
 
         let user_dirs = Self {
             config_dir: data_dir.join("config"),
@@ -79,28 +83,28 @@ impl crate::AppDirs for AppDirs {
 }
 
 #[inline]
-pub fn app_data_dir<P: AsRef<Path>>(prefix: P) -> PathBuf {
-    config_dir().join(prefix)
+pub fn app_data_dir<P: AsRef<Path>>(prefix: P) -> Result<PathBuf, Error> {
+    config_dir().map(|x| x.join(prefix))
 }
 
 #[inline]
-pub fn app_config_dir<P: AsRef<Path>>(prefix: P) -> PathBuf {
-    app_data_dir(prefix).join("config")
+pub fn app_config_dir<P: AsRef<Path>>(prefix: P) -> Result<PathBuf, Error> {
+    app_data_dir(prefix).map(|x| x.join("config"))
 }
 
 #[inline]
-pub fn app_cache_dir<P: AsRef<Path>>(prefix: P) -> PathBuf {
-    app_data_dir(prefix).join("cache")
+pub fn app_cache_dir<P: AsRef<Path>>(prefix: P) -> Result<PathBuf, Error> {
+    app_data_dir(prefix).map(|x| x.join("cache"))
 }
 
 #[inline]
-pub fn app_log_dir<P: AsRef<Path>>(prefix: P) -> PathBuf {
-    app_data_dir(prefix).join("log")
+pub fn app_log_dir<P: AsRef<Path>>(prefix: P) -> Result<PathBuf, Error> {
+    app_data_dir(prefix).map(|x| x.join("log"))
 }
 
 #[inline]
-pub fn app_temporary_dir<P: AsRef<Path>>(prefix: P) -> PathBuf {
-    app_data_dir(prefix).join("cache").join("tmp")
+pub fn app_temporary_dir<P: AsRef<Path>>(prefix: P) -> Result<PathBuf, Error> {
+    app_cache_dir(prefix).map(|x| x.join("tmp"))
 }
 
 pub mod iri {
@@ -111,14 +115,14 @@ pub mod iri {
 
     #[inline]
     pub fn app_temporary_dir<P: AsRef<Path>>(prefix: P) -> Result<IriBuf, Error> {
-        Ok(super::app_temporary_dir(prefix)
+        Ok(super::app_temporary_dir(prefix)?
             .to_absolute_path_buf()?
             .to_file_iri()?)
     }
 
     #[inline]
     pub fn app_cache_dir<P: AsRef<Path>>(prefix: P) -> Result<IriBuf, Error> {
-        Ok(super::app_cache_dir(prefix)
+        Ok(super::app_cache_dir(prefix)?
             .to_absolute_path_buf()?
             .to_file_iri()?)
     }
@@ -131,7 +135,7 @@ mod tests {
     #[test]
     fn basic_app() {
         assert_eq!(
-            app_temporary_dir("Special Company/Bad App"),
+            app_temporary_dir("Special Company/Bad App").unwrap(),
             Path::new(r"C:\ProgramData\Special Company\Bad App\cache\tmp\")
         )
     }
