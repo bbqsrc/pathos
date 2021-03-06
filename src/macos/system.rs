@@ -1,15 +1,23 @@
 use std::path::{Path, PathBuf};
 
+use fruity::foundation::{
+    NSApplicationSupportDirectory, NSCachesDirectory, NSLibraryDirectory, NSSystemDomainMask,
+};
+
 use crate::Error;
 
 #[inline]
 pub fn services_dir() -> &'static Path {
-    "/Library/Services".as_ref()
+    static_path!(NSLibraryDirectory, NSSystemDomainMask, "Services")
+        .as_ref()
+        .unwrap()
 }
 
 #[inline]
 pub fn application_support_dir() -> &'static Path {
-    "/Library/Application Support".as_ref()
+    static_path!(NSApplicationSupportDirectory, NSSystemDomainMask)
+        .as_ref()
+        .unwrap()
 }
 
 #[inline]
@@ -19,12 +27,16 @@ pub fn data_dir() -> &'static Path {
 
 #[inline]
 pub fn cache_dir() -> &'static Path {
-    "/Library/Caches".as_ref()
+    static_path!(NSCachesDirectory, NSSystemDomainMask)
+        .as_ref()
+        .unwrap()
 }
 
 #[inline]
 pub fn log_dir() -> &'static Path {
-    "/Library/Logs".as_ref()
+    static_path!(NSLibraryDirectory, NSSystemDomainMask, "Logs")
+        .as_ref()
+        .unwrap()
 }
 
 pub struct AppDirs {
@@ -45,7 +57,7 @@ impl crate::AppDirs for AppDirs {
         let data_dir = application_support_dir().join(&prefix);
         let cache_dir = cache_dir().join(&prefix);
 
-        let user_dirs = Self {
+        let app_dirs = Self {
             config_dir: data_dir.join("config"),
             temporary_dir: cache_dir.join("tmp"),
             log_dir: log_dir().join(&prefix),
@@ -53,9 +65,9 @@ impl crate::AppDirs for AppDirs {
             cache_dir,
         };
 
-        user_dirs.create()?;
+        app_dirs.create()?;
 
-        Ok(user_dirs)
+        Ok(app_dirs)
     }
 
     fn create(&self) -> Result<(), Error> {

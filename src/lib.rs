@@ -53,6 +53,9 @@ pub enum Error {
     #[error("No directory found for: {0}")]
     NotFound(&'static str),
 
+    #[error("Directory resolution failed: {0}")]
+    DirectoryResolutionFailed(&'static str),
+
     #[error("Failed to create directory for path: '{}'", .1.display())]
     CreateDirectoryFailed(#[source] eieio::Error, PathBuf),
 

@@ -22,6 +22,9 @@ eieio = "1.0.0"
 [target.'cfg(windows)'.dependencies]
 windirs = "1"
 
+[target.'cfg(target_vendor = "apple")'.dependencies]
+fruity = { path = "../fruity", version = "0.2.0", features = ["foundation"] }
+
 [dev-dependencies]
 whoami = "1.1.0"
 

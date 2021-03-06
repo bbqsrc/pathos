@@ -1,3 +1,6 @@
+use fruity::foundation::{
+    NSApplicationSupportDirectory, NSCachesDirectory, NSLibraryDirectory, NSUserDomainMask,
+};
 use once_cell::sync::Lazy;
 use std::path::{Path, PathBuf};
 
@@ -7,11 +10,11 @@ static DIRS: Lazy<Result<Dirs, Error>> = Lazy::new(|| Dirs::new());
 
 pub struct Dirs {
     home_dir: PathBuf,
-    data_dir: PathBuf,
-    cache_dir: PathBuf,
-    log_dir: PathBuf,
-    prefs_dir: PathBuf,
-    services_dir: PathBuf,
+    data_dir: &'static PathBuf,
+    cache_dir: &'static PathBuf,
+    log_dir: &'static PathBuf,
+    prefs_dir: &'static PathBuf,
+    services_dir: &'static PathBuf,
 }
 
 impl Dirs {
@@ -34,18 +37,30 @@ impl Dirs {
 
 impl UserDirs for Dirs {
     fn new() -> Result<Self, Error> {
-        #[allow(deprecated)]
-        let home_dir = std::env::home_dir().ok_or_else(|| Error::NotFound("Home"))?;
-        let lib_dir = home_dir.join("Library");
+        let home_dir = PathBuf::from(
+            super::FILE_MANAGER
+                .home_directory_for_current_user()
+                .path()
+                .to_string(),
+        );
 
-        Ok(Self {
-            data_dir: lib_dir.join("Application Support"),
-            cache_dir: lib_dir.join("Caches"),
-            log_dir: lib_dir.join("Logs"),
-            prefs_dir: lib_dir.join("Preferences"),
-            services_dir: lib_dir.join("Services"),
-            home_dir,
-        })
+        let dirs = (|| -> Result<Dirs, &Error> {
+            // let lib_dir = static_path!(NSLibraryDirectory, NSUserDomainMask).as_ref()?,
+
+            Ok(Self {
+                data_dir: static_path!(NSApplicationSupportDirectory, NSUserDomainMask).as_ref()?,
+                cache_dir: static_path!(NSCachesDirectory, NSUserDomainMask).as_ref()?,
+                log_dir: static_path!(NSLibraryDirectory, NSUserDomainMask, "Logs").as_ref()?,
+                prefs_dir: static_path!(NSLibraryDirectory, NSUserDomainMask, "Preferences")
+                    .as_ref()?,
+                services_dir: static_path!(NSLibraryDirectory, NSUserDomainMask, "Services")
+                    .as_ref()?,
+                home_dir,
+            })
+        })()
+        .map_err(|e| e.clone())?;
+
+        Ok(dirs)
     }
 
     fn home_dir(&self) -> &Path {
