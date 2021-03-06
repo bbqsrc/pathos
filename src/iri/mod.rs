@@ -181,7 +181,10 @@ mod tests {
         #[cfg(windows)]
         assert!(path.is_err());
         #[cfg(unix)]
-        assert_eq!(path.unwrap().to_path_buf(), PathBuf::from("/Library/Caches/Pahkat"));
+        assert_eq!(
+            path.unwrap().to_path_buf(),
+            PathBuf::from("/Library/Caches/Pahkat")
+        );
 
         let path = PathBuf::from(r"C:\ProgramData\Pahkat\logs").to_absolute_path_buf();
         #[cfg(windows)]
