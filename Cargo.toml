@@ -20,7 +20,7 @@ percent-encoding = "2.1.0"
 eieio = "1.0.0"
 
 [target.'cfg(windows)'.dependencies]
-windirs = "0.1.0"
+windirs = "1"
 
 [dev-dependencies]
 whoami = "1.1.0"
