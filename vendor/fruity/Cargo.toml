@@ -1,0 +1,57 @@
+[package]
+name = "fruity"
+version = "0.2.0"
+authors = ["Nikolai Vazquez <hello@nikolaivazquez.com>"]
+edition = "2018"
+license = "MIT OR Apache-2.0"
+description = "Rusty bindings for Apple libraries"
+repository = "https://github.com/nvzqz/fruity"
+homepage = "https://github.com/nvzqz/fruity"
+documentation = "https://docs.rs/fruity"
+categories = ["api-bindings", "development-tools::ffi", "os"]
+keywords = ["apple", "cocoa", "objc", "foundation", "uikit"]
+include = [
+    # Manifest
+    "Cargo.toml",
+
+    # Source files
+    "src",
+    "tests",
+    "examples",
+
+    # Documents
+    "README*",
+    "CHANGELOG*",
+    "LICENSE*",
+]
+
+[features]
+default = ["malloced"]
+
+# Libraries and frameworks
+app_kit = ["foundation"]
+cf_network = ["core_foundation"]
+core_animation = ["foundation"]
+core_audio = []
+core_foundation = ["objc"]
+core_graphics = []
+core_image = ["foundation"]
+core_services = ["core_foundation"]
+core_text = ["core_foundation"]
+core_video = ["foundation"]
+dispatch = []
+foundation = ["objc", "core_graphics"]
+io_kit = ["core_foundation"]
+objc = []
+system_configuration = ["core_foundation"]
+ui_kit = ["foundation"]
+
+[dependencies]
+malloced = { version = "1", optional = true }
+
+[dev-dependencies]
+rand = "0.7.3"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-apple-darwin"]
+all-features = true
