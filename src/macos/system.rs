@@ -1,21 +1,21 @@
 use std::path::{Path, PathBuf};
 
 use fruity::foundation::{
-    NSApplicationSupportDirectory, NSCachesDirectory, NSLibraryDirectory, NSSystemDomainMask,
+    NSApplicationSupportDirectory, NSCachesDirectory, NSLibraryDirectory, NSLocalDomainMask,
 };
 
 use crate::Error;
 
 #[inline]
 pub fn services_dir() -> &'static Path {
-    static_path!(NSLibraryDirectory, NSSystemDomainMask, "Services")
+    static_path!(NSLibraryDirectory, NSLocalDomainMask, "Services")
         .as_ref()
         .unwrap()
 }
 
 #[inline]
 pub fn application_support_dir() -> &'static Path {
-    static_path!(NSApplicationSupportDirectory, NSSystemDomainMask)
+    static_path!(NSApplicationSupportDirectory, NSLocalDomainMask)
         .as_ref()
         .unwrap()
 }
@@ -27,14 +27,14 @@ pub fn data_dir() -> &'static Path {
 
 #[inline]
 pub fn cache_dir() -> &'static Path {
-    static_path!(NSCachesDirectory, NSSystemDomainMask)
+    static_path!(NSCachesDirectory, NSLocalDomainMask)
         .as_ref()
         .unwrap()
 }
 
 #[inline]
 pub fn log_dir() -> &'static Path {
-    static_path!(NSLibraryDirectory, NSSystemDomainMask, "Logs")
+    static_path!(NSLibraryDirectory, NSLocalDomainMask, "Logs")
         .as_ref()
         .unwrap()
 }
