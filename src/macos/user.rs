@@ -35,14 +35,26 @@ impl Dirs {
     }
 }
 
+#[cfg(target_os = "ios")]
+fn _home_dir() -> PathBuf {
+    #[allow(deprecated)]
+    std::env::home_dir()
+        .expect("no container found for current app when attempting to get home dir")
+}
+
+#[cfg(target_os = "macos")]
+fn _home_dir() -> PathBuf {
+    PathBuf::from(
+        super::FILE_MANAGER
+            .home_directory_for_current_user()
+            .path()
+            .to_string(),
+    )
+}
+
 impl UserDirs for Dirs {
     fn new() -> Result<Self, Error> {
-        let home_dir = PathBuf::from(
-            super::FILE_MANAGER
-                .home_directory_for_current_user()
-                .path()
-                .to_string(),
-        );
+        let home_dir = _home_dir();
 
         let dirs = (|| -> Result<Dirs, &Error> {
             // let lib_dir = static_path!(NSLibraryDirectory, NSUserDomainMask).as_ref()?,
